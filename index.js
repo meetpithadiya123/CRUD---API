@@ -1,46 +1,73 @@
-require("dotenv").config();   // <-- IMPORTANT for .env
+require("dotenv").config();   // Load .env FIRST
 
 const express = require('express');
 const app = express();
-const studentRoutes = require('./routes/students.routes')
-const connectDB = require('./config/database.js')
-const auth = require('./middleware/auth.js')
-const userRoutes = require('./routes/users.routes.js')
-const { MulterError } = require('multer')
+const studentRoutes = require('./routes/students.routes');
+const connectDB = require('./config/database.js');
+const auth = require('./middleware/auth.js');
+const userRoutes = require('./routes/users.routes.js');
+const { MulterError } = require('multer');
 const cors = require('cors');
 const path = require('path');
-const rateLimit = require('express-rate-limit')
+const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
-connectDB()
+// ---------------------------------------------
+// CONNECT DATABASE
+// ---------------------------------------------
+(async () => {
+    try {
+        await connectDB();
+        console.log("✅ MongoDB Connected");
+    } catch (error) {
+        console.error("❌ Database connection failed:", error.message);
+        process.exit(1);
+    }
+})();
 
-const PORT  = process.env.PORT || 3000;
+// ---------------------------------------------
+// CONFIG
+// ---------------------------------------------
+const PORT = process.env.PORT || 3000;
 
 const limiter = rateLimit({
-    windowMs: 1000 * 60 * 15,  // <- 15 minutes
-    max:5000,
-    message: "Too many request from this IP, please try again later"
-})
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5000,
+    message: "Too many requests from this IP, try again later.",
+});
 
+// ---------------------------------------------
+// MIDDLEWARE ORDER
+// ---------------------------------------------
+app.use(helmet());           // Security
+app.use(limiter);            // Rate limiting
+app.use(cors());             // CORS
+app.use(express.json());     // JSON parser
+app.use(express.urlencoded({ extended: false })); // Form data parser
 
-// parse application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: false }))
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// parse application/json
-app.use(express.json())
+// ---------------------------------------------
+// ROUTES
+// ---------------------------------------------
+app.use('/api/users', userRoutes);  // No auth required
+app.use(auth);                      // Protect all routes below
+app.use('/api/students', studentRoutes);
 
-app.use('/uploads',express.static(path.join(__dirname,'uploads')))
+// ---------------------------------------------
+// GLOBAL MULTER ERROR HANDLING
+// ---------------------------------------------
+app.use((err, req, res, next) => {
+    if (err instanceof MulterError) {
+        return res.status(400).json({ success: false, message: err.message });
+    }
+    next(err);
+});
 
-app.use(cors())
-
-app.use(helmet())
-
-app.use(limiter)
-
-app.use('/api/users', userRoutes)
-app.use(auth)
-app.use('/api/students', studentRoutes)
-
+// ---------------------------------------------
+// START SERVER
+// ---------------------------------------------
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(` Server running on port ${PORT}`);
 });
