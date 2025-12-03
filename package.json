@@ -1,12 +1,13 @@
 {
   "name": "crud-api-project",
   "version": "1.0.0",
-  "description": "",
+  "description": "CRUD API project with Express, MongoDB, JWT authentication, and file uploads",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
-  "keywords": [],
+  "keywords": ["express", "mongoose", "jwt", "crud", "api"],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -18,7 +19,9 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
-    "multer": "^2.0.2",
+    "multer": "^2.0.2"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.10"
   }
 }
